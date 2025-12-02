@@ -18,6 +18,9 @@
     <ClCompile Include="MainForm.cpp">
       <Filter>Файлы заголовков</Filter>
     </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainForm.h">

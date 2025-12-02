@@ -116,6 +116,9 @@
   <ItemGroup>
     <Reference Include="System.Drawing" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Code128Lib.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

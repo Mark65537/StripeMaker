@@ -8,6 +8,7 @@ namespace StripeMaker {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace Code128Lib;
 
 	/// <summary>
 	/// Сводка для MainForm
@@ -34,10 +35,14 @@ namespace StripeMaker {
 				delete components;
 			}
 		}
-	private: System::Windows::Forms::TextBox^ textBox1;
+	private: System::Windows::Forms::TextBox^ tB_Number;
+	private: System::Windows::Forms::PictureBox^ pB_Main;
 	protected:
-	private: System::Windows::Forms::PictureBox^ pictureBox1;
-	private: System::Windows::Forms::Button^ button1;
+
+	protected:
+
+	private: System::Windows::Forms::Button^ b_Convert;
+
 
 	private:
 		/// <summary>
@@ -52,51 +57,67 @@ namespace StripeMaker {
 		/// </summary>
 		void InitializeComponent(void)
 		{
-			this->textBox1 = (gcnew System::Windows::Forms::TextBox());
-			this->pictureBox1 = (gcnew System::Windows::Forms::PictureBox());
-			this->button1 = (gcnew System::Windows::Forms::Button());
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBox1))->BeginInit();
+			this->tB_Number = (gcnew System::Windows::Forms::TextBox());
+			this->pB_Main = (gcnew System::Windows::Forms::PictureBox());
+			this->b_Convert = (gcnew System::Windows::Forms::Button());
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pB_Main))->BeginInit();
 			this->SuspendLayout();
 			// 
-			// textBox1
+			// tB_Number
 			// 
-			this->textBox1->Location = System::Drawing::Point(12, 12);
-			this->textBox1->Name = L"textBox1";
-			this->textBox1->Size = System::Drawing::Size(373, 20);
-			this->textBox1->TabIndex = 0;
+			this->tB_Number->Location = System::Drawing::Point(12, 12);
+			this->tB_Number->Name = L"tB_Number";
+			this->tB_Number->Size = System::Drawing::Size(373, 20);
+			this->tB_Number->TabIndex = 0;
 			// 
-			// pictureBox1
+			// pB_Main
 			// 
-			this->pictureBox1->Location = System::Drawing::Point(12, 76);
-			this->pictureBox1->Name = L"pictureBox1";
-			this->pictureBox1->Size = System::Drawing::Size(373, 178);
-			this->pictureBox1->TabIndex = 1;
-			this->pictureBox1->TabStop = false;
+			this->pB_Main->Location = System::Drawing::Point(12, 76);
+			this->pB_Main->Name = L"pB_Main";
+			this->pB_Main->Size = System::Drawing::Size(373, 178);
+			this->pB_Main->TabIndex = 1;
+			this->pB_Main->TabStop = false;
 			// 
-			// button1
+			// b_Convert
 			// 
-			this->button1->Location = System::Drawing::Point(13, 39);
-			this->button1->Name = L"button1";
-			this->button1->Size = System::Drawing::Size(87, 23);
-			this->button1->TabIndex = 2;
-			this->button1->Text = L"Генерировать";
-			this->button1->UseVisualStyleBackColor = true;
+			this->b_Convert->Location = System::Drawing::Point(13, 39);
+			this->b_Convert->Name = L"b_Convert";
+			this->b_Convert->Size = System::Drawing::Size(87, 23);
+			this->b_Convert->TabIndex = 2;
+			this->b_Convert->Text = L"Генерировать";
+			this->b_Convert->UseVisualStyleBackColor = true;
+			this->b_Convert->Click += gcnew System::EventHandler(this, &MainForm::b_Convert_Click);
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(398, 290);
-			this->Controls->Add(this->button1);
-			this->Controls->Add(this->pictureBox1);
-			this->Controls->Add(this->textBox1);
+			this->Controls->Add(this->b_Convert);
+			this->Controls->Add(this->pB_Main);
+			this->Controls->Add(this->tB_Number);
 			this->Name = L"MainForm";
 			this->Text = L"StripeMaker";
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBox1))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pB_Main))->EndInit();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
 		}
 #pragma endregion
+
+	private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^ e) {
+		String^ input = tB_Number->Text->Trim();
+		if (input->Length == 0) { MessageBox::Show("Введите цифры."); return; }
+		// TODO решить что делать с нечетной длиной
+		try {
+			Bitmap^ bmp = Code128Lib::Code128::GenerateCode128C(input, 2, 100, 10);
+
+			pB_Main->Image = bmp;
+			pB_Main->SizeMode = PictureBoxSizeMode::CenterImage;
+		}
+		catch (Exception^ ex) {
+			MessageBox::Show("Ошибка: " + ex->Message);
+		}
+	}
 	};
 }

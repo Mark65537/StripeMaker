@@ -27,4 +27,8 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="version.json" />
+  </ItemGroup>
 </Project>

@@ -96,10 +96,8 @@ namespace StripeMaker {
 			this->pB_Main->Location = System::Drawing::Point(15, 108);
 			this->pB_Main->Name = L"pB_Main";
 			this->pB_Main->Size = System::Drawing::Size(571, 190);
-			this->pB_Main->SizeMode = System::Windows::Forms::PictureBoxSizeMode::Zoom;
 			this->pB_Main->TabIndex = 1;
 			this->pB_Main->TabStop = false;
-			this->pB_Main->Resize += gcnew System::EventHandler(this, &MainForm::pB_Main_Resize);
 			// 
 			// b_Convert
 			// 
@@ -176,10 +174,6 @@ namespace StripeMaker {
 		}
 	}
 
-	private: System::Void pB_Main_Resize(System::Object^ sender, System::EventArgs^ e) {
-		UpdatePictureBoxImage();
-	}
-
 	private: System::Void MainForm_Resize(System::Object^ sender, System::EventArgs^ e) {
 		UpdatePictureBoxImage();
 	}
@@ -223,15 +217,11 @@ namespace StripeMaker {
 	}
 
 	private: System::Void UpdatePictureBoxImage(void) {
-		if (m_lastBarcode == nullptr || pB_Main == nullptr) {
-			return;
-		}
+		if (m_lastBarcode == nullptr || pB_Main == nullptr) return;
 
 		System::Drawing::Size targetSize = pB_Main->ClientSize;
 		Bitmap^ scaled = CreateFittedBarcodeBitmap(m_lastBarcode, targetSize);
-		if (scaled == nullptr) {
-			return;
-		}
+		if (scaled == nullptr) return;
 
 		if (pB_Main->Image != nullptr) {
 			delete pB_Main->Image;
@@ -239,7 +229,7 @@ namespace StripeMaker {
 		}
 
 		pB_Main->Image = scaled;
-		pB_Main->SizeMode = PictureBoxSizeMode::Normal;
+		pB_Main->SizeMode = PictureBoxSizeMode::Normal;// Оставим Normal, т.к. картинка уже подогнана
 	}
 	};
 }

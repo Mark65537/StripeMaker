@@ -87,6 +87,7 @@ namespace StripeMaker {
 			this->tB_Number->Name = L"tB_Number";
 			this->tB_Number->Size = System::Drawing::Size(371, 25);
 			this->tB_Number->TabIndex = 0;
+			this->tB_Number->KeyPress += gcnew System::Windows::Forms::KeyPressEventHandler(this, &MainForm::tB_Number_KeyPress);
 			// 
 			// pB_Main
 			// 
@@ -179,10 +180,16 @@ namespace StripeMaker {
 		}
 #pragma endregion
 
-	private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^ e) {
+	private: System::Void tB_Number_KeyPress(System::Object^ sender, System::Windows::Forms::KeyPressEventArgs^ e) {
+		if (!System::Char::IsControl(e->KeyChar) && !System::Char::IsDigit(e->KeyChar)) {
+			e->Handled = true; // блокируем все, кроме цифр и служебных клавиш
+		}
+	}
+
+private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^ e) {
 		String^ input = tB_Number->Text->Trim();
 		if (input->Length == 0) { MessageBox::Show("¬ведите цифры."); return; }
-		// TODO решить что делать с нечетной длиной
+
 		try {
 			if (m_lastBarcode != nullptr) {
 				delete m_lastBarcode;

@@ -26,7 +26,7 @@ static const char* CODE128_PATTERNS[] = {
     "11010000100", // 103 Start A
     "11010010000", // 104 Start B
     "11010011100", // 105 Start C
-    "11000111010"  // 106 STOP (последний)
+    "1100011101011"  // Stop pattern (7 bars/spaces)
 };
  
 /// <summary>

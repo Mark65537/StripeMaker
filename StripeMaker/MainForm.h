@@ -87,6 +87,7 @@ namespace StripeMaker {
 			this->tB_Number->Name = L"tB_Number";
 			this->tB_Number->Size = System::Drawing::Size(371, 25);
 			this->tB_Number->TabIndex = 0;
+			this->tB_Number->MaxLength = 100;
 			this->tB_Number->KeyPress += gcnew System::Windows::Forms::KeyPressEventHandler(this, &MainForm::tB_Number_KeyPress);
 			// 
 			// pB_Main

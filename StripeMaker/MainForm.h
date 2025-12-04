@@ -165,7 +165,7 @@ namespace StripeMaker {
 				m_lastBarcode = nullptr;
 			}
 
-			Bitmap^ bmp = Code128Lib::Code128::GenerateCode128C(input, 2, 100, 10);
+			Bitmap^ bmp = Code128Lib::Code128::GenerateCode128B(input, 2, 100, 10);
 			m_lastBarcode = bmp;
 			UpdatePictureBoxImage();
 		}

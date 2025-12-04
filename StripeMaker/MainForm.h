@@ -48,18 +48,15 @@ namespace StripeMaker {
 	private: System::Windows::Forms::Label^ l_Input;
 	private: System::Windows::Forms::Label^ l_Preview;
 	private: System::Drawing::Bitmap^ m_lastBarcode;
-	protected:
-
-	protected:
-
 	private: System::Windows::Forms::Button^ b_Convert;
+	private: System::Windows::Forms::ContextMenuStrip^ cMS_pictureBox;
+	private: System::Windows::Forms::ToolStripMenuItem^ tSMI_Copy;
+	private: System::Windows::Forms::ToolStripMenuItem^ tSMI_SaveAs;
+	/// <summary>
+	/// Обязательная переменная конструктора.
+    /// </summary>
+	private: System::ComponentModel::IContainer^ components;	
 
-
-	private:
-		/// <summary>
-		/// Обязательная переменная конструктора.
-		/// </summary>
-		System::ComponentModel::Container ^components;
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -68,12 +65,17 @@ namespace StripeMaker {
 		/// </summary>
 		void InitializeComponent(void)
 		{
+			this->components = (gcnew System::ComponentModel::Container());
 			this->tB_Number = (gcnew System::Windows::Forms::TextBox());
 			this->pB_Main = (gcnew System::Windows::Forms::PictureBox());
 			this->b_Convert = (gcnew System::Windows::Forms::Button());
 			this->l_Input = (gcnew System::Windows::Forms::Label());
 			this->l_Preview = (gcnew System::Windows::Forms::Label());
+			this->cMS_pictureBox = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
+			this->tSMI_Copy = (gcnew System::Windows::Forms::ToolStripMenuItem());
+			this->tSMI_SaveAs = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pB_Main))->BeginInit();
+			this->cMS_pictureBox->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// tB_Number
@@ -93,6 +95,7 @@ namespace StripeMaker {
 				| System::Windows::Forms::AnchorStyles::Right));
 			this->pB_Main->BackColor = System::Drawing::SystemColors::Window;
 			this->pB_Main->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+			this->pB_Main->ContextMenuStrip = this->cMS_pictureBox;
 			this->pB_Main->Location = System::Drawing::Point(15, 108);
 			this->pB_Main->Name = L"pB_Main";
 			this->pB_Main->Size = System::Drawing::Size(571, 190);
@@ -131,6 +134,26 @@ namespace StripeMaker {
 			this->l_Preview->TabIndex = 4;
 			this->l_Preview->Text = L"Предпросмотр штрихкода:";
 			// 
+			// cMS_pictureBox
+			// 
+			this->cMS_pictureBox->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(2) { this->tSMI_Copy, this->tSMI_SaveAs });
+			this->cMS_pictureBox->Name = L"cMS_pictureBox";
+			this->cMS_pictureBox->Size = System::Drawing::Size(181, 70);
+			// 
+			// tSMI_Copy
+			// 
+			this->tSMI_Copy->Name = L"tSMI_Copy";
+			this->tSMI_Copy->Size = System::Drawing::Size(180, 22);
+			this->tSMI_Copy->Text = L"Копировать";
+			this->tSMI_Copy->Click += gcnew System::EventHandler(this, &MainForm::tSMI_Copy_Click);
+			// 
+			// tSMI_SaveAs
+			// 
+			this->tSMI_SaveAs->Name = L"tSMI_SaveAs";
+			this->tSMI_SaveAs->Size = System::Drawing::Size(180, 22);
+			this->tSMI_SaveAs->Text = L"Сохранить Как";
+			this->tSMI_SaveAs->Click += gcnew System::EventHandler(this, &MainForm::tSMI_SaveAs_Click);
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -149,6 +172,7 @@ namespace StripeMaker {
 			this->Text = L"StripeMaker — генератор штрихкодов Code128";
 			this->Resize += gcnew System::EventHandler(this, &MainForm::MainForm_Resize);
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pB_Main))->EndInit();
+			this->cMS_pictureBox->ResumeLayout(false);
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -230,6 +254,45 @@ namespace StripeMaker {
 
 		pB_Main->Image = scaled;
 		pB_Main->SizeMode = PictureBoxSizeMode::Normal;// Оставим Normal, т.к. картинка уже подогнана
+	}
+	private: System::Void tSMI_Copy_Click(System::Object^ sender, System::EventArgs^ e) {
+		if (pB_Main != nullptr && pB_Main->Image != nullptr) {
+			Clipboard::SetImage(pB_Main->Image);
+		}
+	}
+	private: System::Void tSMI_SaveAs_Click(System::Object^ sender, System::EventArgs^ e) {
+		if (pB_Main == nullptr || pB_Main->Image == nullptr) return;
+
+		SaveFileDialog^ dlg = gcnew SaveFileDialog();
+		dlg->Title = L"Сохранить штрихкод как...";
+		dlg->Filter = L"PNG файл (*.png)|*.png|JPEG файл (*.jpg;*.jpeg)|*.jpg;*.jpeg|Все файлы (*.*)|*.*";
+		dlg->DefaultExt = L"png";
+		dlg->AddExtension = true;
+
+		if (dlg->ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+			try {
+				Bitmap^ toSave = (m_lastBarcode != nullptr)
+					? m_lastBarcode
+					: dynamic_cast<Bitmap^>(pB_Main->Image);
+
+				if (toSave != nullptr) {
+					String^ ext = System::IO::Path::GetExtension(dlg->FileName)->ToLower();
+					if (ext == L".jpg" || ext == L".jpeg") {
+						toSave->Save(dlg->FileName, System::Drawing::Imaging::ImageFormat::Jpeg);
+					}
+					else {
+						toSave->Save(dlg->FileName, System::Drawing::Imaging::ImageFormat::Png);
+					}
+				}
+			}
+			catch (Exception^ ex) {
+				MessageBox::Show(this,
+					L"Не удалось сохранить файл: " + ex->Message,
+					L"Ошибка",
+					MessageBoxButtons::OK,
+					MessageBoxIcon::Error);
+			}
+		}
 	}
 	};
 }

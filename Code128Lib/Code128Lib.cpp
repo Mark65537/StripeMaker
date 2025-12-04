@@ -153,3 +153,187 @@ Bitmap^ Code128::GenerateCode128C(String^ digits, int moduleWidth, int height, i
     delete g;
     return bmp;
 }
+
+Bitmap^ Code128::GenerateCode128B(String^ text, int moduleWidth, int height, int quietZoneModules) {
+	// Проверки параметров
+	if (moduleWidth <= 0) moduleWidth = 2;
+	if (height < 20) height = 60;
+	if (quietZoneModules < 10) quietZoneModules = 10;
+
+	if (text == nullptr) throw gcnew ArgumentNullException("text");
+	if (text->Length == 0) throw gcnew ArgumentException("Text must not be empty.");
+
+	// Формируем последовательность значений: StartB (104), затем каждый символ -> value 0..94
+	// В Code128B символы соответствуют печатаемым ASCII 32..126, value = code - 32.
+	std::vector<int> values;
+	const int START_B = 104;
+	const int STOP = 106;
+	values.push_back(START_B);
+
+	int index = 0;
+	for each (wchar_t ch in text) {
+		// Разрешаем только печатаемые ASCII 32..126
+		if (ch < 32 || ch > 126) {
+			throw gcnew ArgumentException("Unsupported character for Code128B (allowed ASCII 32..126).");
+		}
+		int v = int(ch) - 32; // 0..94
+		values.push_back(v);
+		++index;
+	}
+
+	// Контрольная сумма
+	int checksum = START_B;
+	for (size_t i = 1; i < values.size(); ++i) {
+		checksum += values[i] * (int)i;
+	}
+	checksum %= 103;
+	values.push_back(checksum);
+	values.push_back(STOP);
+
+	// Построим последовательность модулей (ширин) в единицах модулей (1..4)
+	std::vector<int> modules; // чередующиеся: barWidth, spaceWidth, barWidth, ...
+	// quiet zone (в модулях) делаем как пробел (space)
+	for (int q = 0; q < quietZoneModules; ++q) modules.push_back(0); // placeholder для ширины quiet zone, учитывается в расчёте пикселей отдельно
+
+	for (size_t idx = 0; idx < values.size(); ++idx) {
+		int val = values[idx];
+		if (val < 0 || val > 106) throw gcnew InvalidOperationException("Invalid code value.");
+		const char* pattern = CODE128_PATTERNS[val];
+		std::vector<int> w = patternToWidths(pattern);
+
+		for (size_t k = 0; k < w.size(); ++k) {
+			modules.push_back(w[k]);
+		}
+	}
+
+	// Рассчитаем ширину: quietZone left and right
+	int leftQuietPx = quietZoneModules * moduleWidth;
+	int rightQuietPx = leftQuietPx;
+
+	// Рассчитать общую сумму модулей, исключая quiet placeholders
+	int sumModules = 0;
+
+	size_t pos = 0;
+	while (pos < modules.size() && modules[pos] == 0) pos++;
+	for (size_t i = pos; i < modules.size(); ++i) sumModules += modules[i];
+
+	int totalWidth = leftQuietPx + rightQuietPx + sumModules * moduleWidth;
+
+	Bitmap^ bmp = gcnew Bitmap(totalWidth, height);
+	Graphics^ g = Graphics::FromImage(bmp);
+	g->Clear(Color::White);
+
+	// Нарисуем штрихкод: начинаем от leftQuietPx. Модули чередуются: первым модулем в каждом символе — bar (черный).
+	int x = leftQuietPx;
+	bool drawBar = true;
+	// пропустим начальные нули
+	size_t i = 0;
+	while (i < modules.size() && modules[i] == 0) ++i;
+
+	for (; i < modules.size(); ++i) {
+		int wMod = modules[i];
+		int wPx = wMod * moduleWidth;
+		if (drawBar) {
+			if (wPx > 0) {
+				g->FillRectangle(Brushes::Black, x, 0, wPx, height);
+			}
+		}
+		// смещаемся
+		x += wPx;
+		drawBar = !drawBar;
+	}
+
+	delete g;
+	return bmp;
+}
+
+Bitmap^ Code128::GenerateCode128A(String^ text, int moduleWidth, int height, int quietZoneModules) {
+	// Проверки параметров
+	if (moduleWidth <= 0) moduleWidth = 2;
+	if (height < 20) height = 60;
+	if (quietZoneModules < 10) quietZoneModules = 10;
+
+	if (text == nullptr) throw gcnew ArgumentNullException("text");
+	if (text->Length == 0) throw gcnew ArgumentException("Text must not be empty.");
+
+	// Формируем последовательность значений: StartA (103), затем каждый символ -> value 0..95
+	// В Code128A символы соответствуют ASCII 0..95, value = code (0..95).
+	std::vector<int> values;
+	const int START_A = 103;
+	const int STOP = 106;
+	values.push_back(START_A);
+
+	for each (wchar_t ch in text) {
+		// Допускаем только диапазон ASCII 0..95
+		if (ch < 0 || ch > 95) {
+			throw gcnew ArgumentException("Unsupported character for Code128A (allowed ASCII 0..95).");
+		}
+		int v = int(ch); // 0..95
+		values.push_back(v);
+	}
+
+	// Контрольная сумма
+	int checksum = START_A;
+	for (size_t i = 1; i < values.size(); ++i) {
+		checksum += values[i] * (int)i;
+	}
+	checksum %= 103;
+	values.push_back(checksum);
+	values.push_back(STOP);
+
+	// Построим последовательность модулей (ширин) в единицах модулей (1..4)
+	std::vector<int> modules; // чередующиеся: barWidth, spaceWidth, barWidth, ...
+	// quiet zone (в модулях) делаем как пробел (space)
+	for (int q = 0; q < quietZoneModules; ++q) modules.push_back(0); // placeholder для ширины quiet zone, учитывается в расчёте пикселей отдельно
+
+	for (size_t idx = 0; idx < values.size(); ++idx) {
+		int val = values[idx];
+		if (val < 0 || val > 106) throw gcnew InvalidOperationException("Invalid code value.");
+		const char* pattern = CODE128_PATTERNS[val];
+		std::vector<int> w = patternToWidths(pattern);
+
+		for (size_t k = 0; k < w.size(); ++k) {
+			modules.push_back(w[k]);
+		}
+	}
+
+	// Рассчитаем ширину: quietZone left and right
+	int leftQuietPx = quietZoneModules * moduleWidth;
+	int rightQuietPx = leftQuietPx;
+
+	// Рассчитать общую сумму модулей, исключая quiet placeholders
+	int sumModules = 0;
+
+	size_t pos = 0;
+	while (pos < modules.size() && modules[pos] == 0) pos++;
+	for (size_t i = pos; i < modules.size(); ++i) sumModules += modules[i];
+
+	int totalWidth = leftQuietPx + rightQuietPx + sumModules * moduleWidth;
+
+	Bitmap^ bmp = gcnew Bitmap(totalWidth, height);
+	Graphics^ g = Graphics::FromImage(bmp);
+	g->Clear(Color::White);
+
+	// Нарисуем штрихкод: начинаем от leftQuietPx. Модули чередуются: первым модулем в каждом символе — bar (черный).
+	int x = leftQuietPx;
+	bool drawBar = true;
+	// пропустим начальные нули
+	size_t i = 0;
+	while (i < modules.size() && modules[i] == 0) ++i;
+
+	for (; i < modules.size(); ++i) {
+		int wMod = modules[i];
+		int wPx = wMod * moduleWidth;
+		if (drawBar) {
+			if (wPx > 0) {
+				g->FillRectangle(Brushes::Black, x, 0, wPx, height);
+			}
+		}
+		// смещаемся
+		x += wPx;
+		drawBar = !drawBar;
+	}
+
+	delete g;
+	return bmp;
+}

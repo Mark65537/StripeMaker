@@ -182,24 +182,27 @@ namespace StripeMaker {
 		}
 #pragma endregion
 
+#pragma region Events
+	private: System::Void MainForm_Resize(System::Object^ sender, System::EventArgs^ e) {
+		UpdatePictureBoxImage();
+	}
+
 	private: System::Void tB_Number_KeyPress(System::Object^ sender, System::Windows::Forms::KeyPressEventArgs^ e) {
 		if (!System::Char::IsControl(e->KeyChar) && !System::Char::IsDigit(e->KeyChar)) {
 			e->Handled = true; // блокируем все, кроме цифр и служебных клавиш
 		}
 	}
 
-    private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^ e) {
+	private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^ e) {
 		String^ input = tB_Number->Text->Trim();
-		if (input->Length == 0) { MessageBox::Show("Введите цифры."); return; }
+		if (input->Length == 0) {
+			MessageBox::Show("Введите цифры.");
+			return;
+		}
 
 		try {
-			if (m_lastBarcode != nullptr) {
-				delete m_lastBarcode;
-				m_lastBarcode = nullptr;
-			}
-
-			Bitmap^ bmp = Code128Lib::Code128::GenerateCode128B(input, 2, 100, 10);
-			m_lastBarcode = bmp;
+			delete m_lastBarcode;
+			m_lastBarcode = Code128Lib::Code128::GenerateCode128B(input, 2, 100, 10);
 			UpdatePictureBoxImage();
 		}
 		catch (Exception^ ex) {
@@ -207,12 +210,47 @@ namespace StripeMaker {
 		}
 	}
 
-	private: System::Void MainForm_Resize(System::Object^ sender, System::EventArgs^ e) {
-		UpdatePictureBoxImage();
+	private: System::Void tSMI_Copy_Click(System::Object^ sender, System::EventArgs^ e) {
+		if (m_lastBarcode != nullptr) {
+			Clipboard::SetImage(m_lastBarcode);
+		}
 	}
+	private: System::Void tSMI_SaveAs_Click(System::Object^ sender, System::EventArgs^ e) {
+		if (m_lastBarcode == nullptr) return;
+
+		SaveFileDialog^ dlg = gcnew SaveFileDialog();
+		dlg->Title = L"Сохранить штрихкод как...";
+		dlg->Filter = L"PNG файл (*.png)|*.png|JPEG файл (*.jpg;*.jpeg)|*.jpg;*.jpeg|Все файлы (*.*)|*.*";
+		dlg->DefaultExt = L"png";
+		dlg->AddExtension = true;
+		dlg->FileName = L"BarCode";
+
+		if (dlg->ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+			try {
+				String^ ext = System::IO::Path::GetExtension(dlg->FileName)->ToLower();
+                    if (ext == L".png") {
+                        m_lastBarcode->Save(dlg->FileName, System::Drawing::Imaging::ImageFormat::Png);
+                    }
+                    else if (ext == L".jpg" || ext == L".jpeg") {
+                        m_lastBarcode->Save(dlg->FileName, System::Drawing::Imaging::ImageFormat::Jpeg);
+                    }
+                    else {
+                        throw gcnew Exception("Wrong save file format");
+                    }
+			}
+			catch (Exception^ ex) {
+				MessageBox::Show(this,
+					L"Не удалось сохранить файл: " + ex->Message,
+					L"Ошибка",
+					MessageBoxButtons::OK,
+					MessageBoxIcon::Error);
+			}
+		}
+	}
+#pragma endregion	
 
 	private: Rectangle GetFitRectangle(System::Drawing::Size sourceSize, System::Drawing::Size targetSize) {
-		if (sourceSize.Width <= 0 || sourceSize.Height <= 0) {
+		if (sourceSize.Width <= 0 || sourceSize.Height <= 0 || targetSize.Width <= 0 || targetSize.Height <= 0) {
 			return Rectangle(0, 0, targetSize.Width, targetSize.Height);
 		}
 
@@ -264,58 +302,17 @@ namespace StripeMaker {
 		pB_Main->Image = scaled;
 		pB_Main->SizeMode = PictureBoxSizeMode::Normal;// Оставим Normal, т.к. картинка уже подогнана
 	}
-	private: System::Void tSMI_Copy_Click(System::Object^ sender, System::EventArgs^ e) {
-		if (pB_Main != nullptr && pB_Main->Image != nullptr) {
-			Clipboard::SetImage(pB_Main->Image);
-		}
-	}
-	private: System::Void tSMI_SaveAs_Click(System::Object^ sender, System::EventArgs^ e) {
-		if (pB_Main == nullptr || pB_Main->Image == nullptr) return;
-
-		SaveFileDialog^ dlg = gcnew SaveFileDialog();
-		dlg->Title = L"Сохранить штрихкод как...";
-		dlg->Filter = L"PNG файл (*.png)|*.png|JPEG файл (*.jpg;*.jpeg)|*.jpg;*.jpeg|Все файлы (*.*)|*.*";
-		dlg->DefaultExt = L"png";
-		dlg->AddExtension = true;
-
-		if (dlg->ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
-			try {
-				Bitmap^ toSave = (m_lastBarcode != nullptr)
-					? m_lastBarcode
-					: dynamic_cast<Bitmap^>(pB_Main->Image);
-
-				if (toSave != nullptr) {
-					String^ ext = System::IO::Path::GetExtension(dlg->FileName)->ToLower();
-					if (ext == L".jpg" || ext == L".jpeg") {
-						toSave->Save(dlg->FileName, System::Drawing::Imaging::ImageFormat::Jpeg);
-					}
-					else {
-						toSave->Save(dlg->FileName, System::Drawing::Imaging::ImageFormat::Png);
-					}
-				}
-			}
-			catch (Exception^ ex) {
-				MessageBox::Show(this,
-					L"Не удалось сохранить файл: " + ex->Message,
-					L"Ошибка",
-					MessageBoxButtons::OK,
-					MessageBoxIcon::Error);
-			}
-		}
-	}
+	
 
 	private: System::Void ProcessCommandLineArg(String^ arg) {
-		bool isOnlyDigits = true;
-		for (int i = 0; i < arg->Length; i++) {
-			if (!Char::IsDigit(arg[i])) {
-				isOnlyDigits = false;
-				break;
-			}
+		if (arg == nullptr || arg->Length == 0) return;
+		
+		// Проверяем, что строка содержит только цифры
+		for each (wchar_t ch in arg) {
+			if (!Char::IsDigit(ch)) return;
 		}
-
-		if (isOnlyDigits) {
-			tB_Number->Text = arg;
-		}
+		
+		tB_Number->Text = arg;
 	}
 	};
 }

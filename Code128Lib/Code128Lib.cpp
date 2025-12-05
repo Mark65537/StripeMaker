@@ -37,6 +37,7 @@ static const char* CODE128_PATTERNS[] = {
 /// <returns></returns>
 static std::vector<int> patternToWidths(const char* pat) {
     std::vector<int> widths;
+    widths.reserve(6);
     int len = (int)strlen(pat);
     int i = 0;
     while (i < len) {
@@ -45,7 +46,6 @@ static std::vector<int> patternToWidths(const char* pat) {
         while (i < len && pat[i] == curr) { ++count; ++i; }
         widths.push_back(count);
     }
-    // Должно быть 6 значений (3 bars + 3 spaces), но стоп-символ имеет особенность — мы всё равно отрисуем по последовательности.
     return widths;
 }
 
@@ -106,7 +106,6 @@ Bitmap^ Code128::GenerateCode128C(String^ digits, int moduleWidth, int height, i
         if (val < 0 || val > 106) throw gcnew InvalidOperationException("Invalid code value.");
         const char* pattern = CODE128_PATTERNS[val];
         std::vector<int> w = patternToWidths(pattern);
-        
         for (size_t k = 0; k < w.size(); ++k) {
             modules.push_back(w[k]);
         }
@@ -160,8 +159,9 @@ Bitmap^ Code128::GenerateCode128B(String^ text, int moduleWidth, int height, int
 	if (height < 20) height = 60;
 	if (quietZoneModules < 10) quietZoneModules = 10;
 
-	if (text == nullptr) throw gcnew ArgumentNullException("text");
-	if (text->Length == 0) throw gcnew ArgumentException("Text must not be empty.");
+	if (text == nullptr || text->Length == 0) {
+		throw gcnew ArgumentException("Text must not be empty.");
+	}
 
 	// Формируем последовательность значений: StartB (104), затем каждый символ -> value 0..94
 	// В Code128B символы соответствуют печатаемым ASCII 32..126, value = code - 32.

@@ -17,9 +17,10 @@ namespace StripeMaker {
 	public ref class MainForm : public System::Windows::Forms::Form
 	{
 	public:
-		MainForm(void)
+		MainForm(String^ commandLineArg)
 		{
 			InitializeComponent();
+			ProcessCommandLineArg(commandLineArg);
 		}
 
 	protected:
@@ -187,7 +188,7 @@ namespace StripeMaker {
 		}
 	}
 
-private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^ e) {
+    private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^ e) {
 		String^ input = tB_Number->Text->Trim();
 		if (input->Length == 0) { MessageBox::Show("ֲגוהטעו צטפנû."); return; }
 
@@ -300,6 +301,20 @@ private: System::Void b_Convert_Click(System::Object^ sender, System::EventArgs^
 					MessageBoxButtons::OK,
 					MessageBoxIcon::Error);
 			}
+		}
+	}
+
+	private: System::Void ProcessCommandLineArg(String^ arg) {
+		bool isOnlyDigits = true;
+		for (int i = 0; i < arg->Length; i++) {
+			if (!Char::IsDigit(arg[i])) {
+				isOnlyDigits = false;
+				break;
+			}
+		}
+
+		if (isOnlyDigits) {
+			tB_Number->Text = arg;
 		}
 	}
 	};

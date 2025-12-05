@@ -10,7 +10,8 @@ int main(array<System::String^>^ args)
     Application::EnableVisualStyles();
     Application::SetCompatibleTextRenderingDefault(false);
 
-    // Создаём и запускаем основную форму
-    Application::Run(gcnew MainForm());
+    // Создание формы с обработкой аргументов командной строки
+    String^ commandLineArg = (args->Length > 0) ? args[0] : nullptr;
+    Application::Run(gcnew MainForm(commandLineArg));
     return 0;
 }
